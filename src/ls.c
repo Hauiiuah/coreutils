@@ -4788,6 +4788,17 @@ quote_name (char const *name, struct quoting_options const *options,
   return len + pad;
 }
 
+
+static const char*
+prepend_symbol(const char *name,const char *symbol){
+  char* tmp = malloc(strlen(name)+2);
+  strcpy(tmp,symbol);
+  strcat(tmp," ");
+  strcat(tmp,name);
+  return tmp;
+}
+
+
 static size_t
 print_name_with_quoting (const struct fileinfo *f,
                          bool symlink_target,
@@ -4795,6 +4806,23 @@ print_name_with_quoting (const struct fileinfo *f,
                          size_t start_col)
 {
   const char* name = symlink_target ? f->linkname : f->name;
+  //
+  //HAUI EDIT
+  //
+  switch(f->filetype){
+    case directory:
+     name= prepend_symbol(name,"\uE5FE");
+      break;
+    case symbolic_link:
+      name = prepend_symbol(name,"\uF469");
+      break;
+    case normal:
+      if(f->stat.st_mode & S_IXUSR)
+        name = prepend_symbol(name,"\uFD45");
+      break;
+    default:
+      break;
+  }
 
   const struct bin_str *color = print_with_color ?
                                 get_color_indicator (f, symlink_target) : NULL;
@@ -4842,13 +4870,12 @@ prep_non_filename_text (void)
    as requested by switches.  */
 
 static size_t
-print_file_name_and_frills (const struct fileinfo *f, size_t start_col)
+print_file_name_and_frills (const struct fileinfo *f, size_t start_col )
 {
   char buf[MAX (LONGEST_HUMAN_READABLE + 1, INT_BUFSIZE_BOUND (uintmax_t))];
-
   set_normal_color ();
 
-  if (print_inode)
+ if (print_inode)
     printf ("%*s ", format == with_commas ? 0 : inode_number_width,
             format_inode (buf, sizeof buf, f));
 
@@ -4859,13 +4886,12 @@ print_file_name_and_frills (const struct fileinfo *f, size_t start_col)
                               ST_NBLOCKSIZE, output_block_size));
 
   if (print_scontext)
-    printf ("%*s ", format == with_commas ? 0 : scontext_width, f->scontext);
+   printf ("%*s ", format == with_commas ? 0 : scontext_width, f->scontext);
 
   size_t width = print_name_with_quoting (f, false, NULL, start_col);
 
-  if (indicator_style != none)
+if (indicator_style != none)
     width += print_type_indicator (f->stat_ok, f->stat.st_mode, f->filetype);
-
   return width;
 }
 
